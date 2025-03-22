@@ -1,9 +1,11 @@
 import requests
+import json
 
 url = 'http://127.0.0.1:5000/upload'
-excel_file_path = "C:\\Users\\Andrei\OneDrive\\Desktop\\AN III\\Diverse Python Scripts\\RaceBuddy_pdfs\\World_Cup_Leogang.xlsx"
+excel_file_path = "data\\test_data.xlsx"
 
 files = {}
+data = {}
 
 with open(excel_file_path, 'rb') as f:
     #files = {'file': (excel_file_path, f, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
@@ -13,11 +15,13 @@ with open(excel_file_path, 'rb') as f:
     columns["rank"] = "Rank"
     columns["time"] = "Time"
     columns["points"] = "Points"
+    columns["name"] = "Athlete Name"
 
-    files["columns"] = columns
+    data["columns"] = json.dumps(columns)
+    data["event_id"] = 1
 
     # Send the POST request with the file attached
-    response = requests.post(url, files=files)
+    response = requests.post(url, files=files, data=data)
 
 
 if response.status_code == 200:
