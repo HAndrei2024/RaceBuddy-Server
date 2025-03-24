@@ -24,7 +24,7 @@ def upload_excel():
     excel_required_columns = database_excel_columns_map.values()
 
     final_response_dict = {"not_found" : []}
-    final_response_code = -1
+    final_response_code = 200
 
     if not (file.filename.endswith('.xlsx') or not file.filename.endswith('.xls')):
         return jsonify({"error": "Invalid file format. Only .xlsx or .xls files are allowed."}), 400
@@ -34,46 +34,44 @@ def upload_excel():
 
         for sheet_name in xls.sheet_names:
             excel_data = pd.read_excel(file, sheet_name=sheet_name)
-            print("#1 Excel read succesfully!")
+           
             if does_excel_sheet_contain_required_columns(excel_data, excel_required_columns):
-                for index, row in excel_data.iterrows():
+                for _, row in excel_data.iterrows():
+
                     update_query_dict = {}
                     athlete_id = -1
-                    for key in database_excel_columns_map.keys():
+                    athlete_not_found_flag = False
+
                     # build a dict with the following structure:
                     # key (database columns): value (value from excel - from the required column)
+                    for key in database_excel_columns_map.keys():
+                    
                         if key != "name":
                             update_query_dict[key] = str(row[database_excel_columns_map[key]])
                             
                         else:
-                            
                             athlete_name = row[database_excel_columns_map[key]]
-                            print(f"{athlete_name=}")
                             athlete_id = get_athlete_id(athlete_name, supabase)
                             
                             result_dict_response = verify_athlete_result(athlete_id, event_id)
  
                             if bool(result_dict_response) == False:
                                 final_response_dict["not_found"].append(athlete_name)
-                                
-
-                            print(f"{athlete_id=}")
-                            if athlete_id == -1:
-                                print(f"Athlete {athlete_name} id couldn't be found!")
+                                athlete_not_found_flag = True
+                                final_response_code = 400
                     
-                    if athlete_id != -1:
-                        if bool(final_response_dict["not_found"]) == True:
-                            final_response_dict["message"] = "There are results in the excel not registered in the database!"
-                            final_response_code = 400
-                        else:
-                            print("#2 Updating the database...")
-                            print(f"{update_query_dict=}")
-                            update_database(update_query_dict, athlete_id, event_id, supabase)
+                    if athlete_not_found_flag == True:
+                        if "message" not in final_response_dict.keys():
+                            final_response_dict["message"] = "There are results in the excel not registered in the database! The other athlete's results have been updated"
+                    else:
+                        update_database(update_query_dict, athlete_id, event_id, supabase)
 
+        if final_response_code == 400:
+            return jsonify(final_response_dict), final_response_code
         
         final_response_dict["message"] = "Data successfully uploaded to Supabase."
-        return jsonify(final_response_dict), 200
-    
+        return  jsonify(final_response_dict), final_response_code
+        
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
