@@ -52,6 +52,9 @@ def upload_excel():
                         else:
                             athlete_name = row[database_excel_columns_map[key]]
                             athlete_id = get_athlete_id(athlete_name, supabase)
+                            #TODO: Comment!
+                            print(f"Check name: {athlete_name} -> {athlete_id=}")
+                            # athlete_id = '9d02c61b-e358-4f5d-87a6-7a150b2d5ae4'
                             
                             result_dict_response = verify_athlete_result(athlete_id, event_id)
  
@@ -78,8 +81,8 @@ def upload_excel():
 
 def verify_athlete_result(athlete_id, event_id):
     response = supabase.table("Result").select("*") \
-                    .eq("athlete_id", athlete_id) \
-                    .eq("event_id", event_id) \
+                    .eq('athlete_uuid', athlete_id) \
+                    .eq('event_uuid', event_id) \
                     .execute()
 
     return response.data
@@ -87,11 +90,12 @@ def verify_athlete_result(athlete_id, event_id):
 
 # assuming name like: first_name + last_name
 def get_athlete_id(name, supabase):
-    response = supabase.table("Athlete").select("athlete_id") \
-                .eq('first_name', name) \
+    response = supabase.table("Athlete").select('athlete_uuid') \
+                .eq('first_name', name.split(" ")[0]) \
+                .eq('last_name', name.split(" ")[1]) \
                 .execute()
 
-    return response.data[0]["athlete_id"]
+    return response.data[0]["athlete_uuid"]
 
 
 def does_excel_sheet_contain_required_columns(excel_data, excel_required_columns):
@@ -109,12 +113,14 @@ def update_database(query_dict, athlete_id, event_id, supabase):
     print(f"{athlete_id=}")
     response = supabase.table("Result") \
                 .update(query_dict) \
-                .eq('athlete_id', athlete_id) \
-                .eq('event_id', event_id) \
+                .eq('athlete_uuid', athlete_id) \
+                .eq('event_uuid', event_id) \
                 .execute()
     print(f"Database updated! {response=}")
     return response
 
 
 if __name__ == "__main__":
+    print("Server is up!")
     app.run(debug=True)
+    
