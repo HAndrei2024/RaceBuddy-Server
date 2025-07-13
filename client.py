@@ -1,7 +1,7 @@
 import requests
 import json
 
-url = 'http://127.0.0.1:5000/upload'
+url = 'http://127.0.0.1:5000/prediction'
 excel_file_path = "data\\sample_results.xlsx"
 
 files = {}
@@ -38,11 +38,29 @@ with open(excel_file_path, 'rb') as f:
     data["event_id"] = "13c94ae9-ae3a-4b50-81e4-96d3cf7bc319"
 
     # Send the POST request with the file attached
-    response = requests.post(url, files=files, data=data)
+    #response = requests.post(url, files=files, data=data)
+
+    input_json = {
+    "start_date": "2025-09-12",
+    "end_date": "2025-09-15",
+    "country": "France",
+    "category": "Music"
+    }
+
+    response = requests.post(url = url, json=input_json)
+
+    if response.status_code == 200:
+        data = response.json()
+        predicted_number = data.get("predicted_participants")
+
+        print("✅ Predicted participants:", predicted_number)
+    else:
+        print("❌ Request failed:", response.status_code)
+        print("Response:", response.text)
 
 
-if response.status_code == 200:
-    print("File uploaded successfully:", response.json())
-else:
-    print("Failed to upload file. Status code:", response.status_code)
-    print("Error:", response.json())
+# if response.status_code == 200:
+#     print("File uploaded successfully:", response.json())
+# else:
+#     print("Failed to upload file. Status code:", response.status_code)
+#     print("Error:", response.json())

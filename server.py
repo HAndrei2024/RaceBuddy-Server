@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+import joblib
 import pandas as pd
 import json
 from supabase import create_client, Client
@@ -7,6 +8,43 @@ from keys import SUPABASE_URL, SUPABASE_API_KEY
 
 app = Flask(__name__)
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
+
+
+@app.route('/prediction', methods=['POST'])
+def get_prediction():
+    try:
+        event_mapping = json.loads(request.form["event"])
+
+        print(f'event loaded: {event_mapping=}')
+
+        #event_mapping = request.json
+        start_date = pd.to_datetime(event_mapping["start_date"])
+        end_date = pd.to_datetime(event_mapping["end_date"])
+
+        # Build the final model-ready DataFrame
+        event_to_predict = pd.DataFrame([{
+            "country": event_mapping["country"],
+            "category": event_mapping["category"],
+            "duration_days": (end_date - start_date).days,
+            "start_month": start_date.month,
+            "start_weekday": start_date.weekday()  # Monday = 0, Sunday = 6
+        }])
+
+        loaded_model = joblib.load('event_participants_model_v2.pkl')
+
+        predicted_participants = loaded_model.predict(event_to_predict)
+        #predicted = int(predicted_participants)
+
+        #predicted_rounded =  np.round(predicted_participants)
+
+        # 4. Return response
+        return jsonify({
+            'predicted_participants': int(predicted_participants[0])
+        })
+
+    except Exception as e:
+        print(str(e))
+        return jsonify({'error': str(e)}), 400
 
 
 @app.route('/upload', methods=['POST'])

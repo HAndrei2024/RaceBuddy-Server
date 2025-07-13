@@ -3,3 +3,6 @@ data/
 keys.py
 __pycache__/
 test.py
+model.py
+event_participants_model.pkl
+event_participants_model_v2.pkl
